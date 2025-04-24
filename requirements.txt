@@ -22,4 +22,5 @@ pytest
 httpx
 fake-useragent
 google-generativeai
-email-validator 
+email-validator
+guardrails
