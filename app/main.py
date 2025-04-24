@@ -2,6 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from app.api.main import router as api_router, periodic_news_update
 import asyncio
+import httpx
 from app.services.news_service import update_news_cache
 from datetime import datetime
 import os
@@ -44,6 +45,21 @@ async def startup_event():
     await update_news_cache()
     # Start the periodic news update task
     asyncio.create_task(periodic_news_update())
+    # Start the keep-alive ping task
+    asyncio.create_task(keep_server_awake())
+
+async def keep_server_awake():
+    # Get the external URL from environment variables, with a default fallback
+    url = os.getenv("EXTERNAL_URL", "https://bam-server.onrender.com")
+    
+    while True:
+        await asyncio.sleep(120)  # Ping every 2 minutes
+        try:
+            async with httpx.AsyncClient() as client:
+                await client.get(url, timeout=10)
+            print("✅ Self-ping successful")
+        except Exception as e:
+            print("⚠️ Keep-alive ping failed:", e)
 
 @app.on_event("shutdown")
 async def shutdown_event():
