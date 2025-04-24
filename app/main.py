@@ -14,6 +14,7 @@ load_dotenv()
 # Get configuration from environment variables
 DEBUG = os.getenv("DEBUG", "False").lower() in ("true", "1", "t")
 ALLOWED_ORIGINS = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+PORT = int(os.getenv("PORT", 8000))  # Get PORT from environment, default to 8000
 
 # In development mode, allow all origins for easier testing
 if DEBUG:
@@ -70,6 +71,5 @@ if __name__ == "__main__":
     uvicorn.run(
         "app.main:app",
         host="0.0.0.0",
-        port=8000,
-        reload=DEBUG
+        port=PORT  # Use PORT from environment variable
     ) 
