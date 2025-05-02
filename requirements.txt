@@ -1,3 +1,6 @@
+guardrails-ai>=0.3.0
+langchain-openai
+google-generativeai==0.3.2
 fastapi
 uvicorn
 pydantic
@@ -22,5 +25,3 @@ pytest
 httpx
 fake-useragent
 email-validator
-guardrails-ai>=0.3.0
-google-generativeai==0.3.2
