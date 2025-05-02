@@ -668,11 +668,11 @@
 #         )
 #
 #
-
-
-
-
-
+#
+#
+#
+#
+#
 
 
 
@@ -725,6 +725,14 @@ llm1 = LLM(
     model='gemini/gemini-2.0-flash',
     api_key=os.getenv("GEMINI_API_KEY")
 )
+
+
+try:
+    import google.generativeai as genai
+    GENAI_AVAILABLE = True
+except ImportError:
+    logger.warning("Google Generative AI package not available. Using fallback for conceptual queries.")
+    GENAI_AVAILABLE = False
 
 
 # Define tools
@@ -1093,36 +1101,38 @@ async def get_financial_advice(query: str, user_id: Optional[int] = None) -> Cha
 
         # Step 2.1: Handle conceptual queries via Gemini
         if query_type == 'conceptual':
+            if GENAI_AVAILABLE:
+                logger.info("Query is conceptual; generating response using Gemini (simulated streaming)")
+                genai.configure(api_key=os.getenv("GEMINI_API_KEY"))
+                model = genai.GenerativeModel('gemini-2.0-flash')
+                response = model.generate_content(query)
+                full_text = response.text
 
-            logger.info("Query is conceptual; generating response using Gemini (simulated streaming)")
-            from google import genai
-            gemini_client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
-            response = gemini_client.models.generate_content(
-                model="gemini-2.0-flash",
-                contents=query
-            )
-            full_text = response.text
+                # Simulate streaming
+                chunk_size = 50
+                final_text = ""
+                for i in range(0, len(full_text), chunk_size):
+                    chunk = full_text[i:i + chunk_size]
+                    final_text += chunk
+                    print(chunk, end='', flush=True)
+                    await asyncio.sleep(0.1)
 
-            # Simulate streaming by splitting the full text into chunks and printing with a delay
-            # (In your actual implementation you might send these chunks to the client UI as they are "generated")
-
-            chunk_size = 50  # Define a chunk size in number of characters (adjust as needed)
-            final_text = ""
-            for i in range(0, len(full_text), chunk_size):
-                chunk = full_text[i:i + chunk_size]
-                final_text += chunk
-                # This print simulates sending out a chunk in real-time (or update a UI component)
-                print(chunk, end='', flush=True)
-                # Await a short delay to simulate streaming; adjust the delay as needed.
-                await asyncio.sleep(0.1)
-
-            return ChatResponse(
-                answer=final_text,
-                recommendations=[],
-                supporting_data=[],
-                sources=[],
-                timestamp=datetime.now()
-            )
+                return ChatResponse(
+                    answer=final_text,
+                    recommendations=[],
+                    supporting_data=[],
+                    sources=[],
+                    timestamp=datetime.now()
+                )
+            else:
+                logger.warning("Gemini not available; cannot process conceptual query")
+                return ChatResponse(
+                    answer="I'm sorry, but I cannot process conceptual queries at the moment.",
+                    recommendations=[],
+                    supporting_data=[],
+                    sources=[],
+                    timestamp=datetime.now()
+                )
 
         # Queries that require real-time data and any other financial queries (e.g., portfolio)
         # will be processed through the standard crew flow.
